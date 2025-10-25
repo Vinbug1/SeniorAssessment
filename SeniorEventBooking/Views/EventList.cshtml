@@ -1,123 +1,41 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
     Layout = "master.cshtml";
-    var events = Model.Children().OrderBy(x => x.Value<DateTime>("eventDateTime"));
+    var events = Model.Content.Children()
+        .Where(x => x.Value<DateTime?>("eventDateTime") != null)
+        .OrderBy(x => x.Value<DateTime>("eventDateTime"));
 }
 
 <section class="event-list container">
-    <h1>@Model.Name</h1>
+    <h1 class="page-title">@Model.Content.Name</h1>
 
     <div class="event-layout">
         <!-- LEFT: Event list -->
-        <ul class="events">
+        <ul class="events" aria-label="Upcoming events list">
             @foreach (var eventItem in events)
             {
+                var eventDate = eventItem.Value<DateTime?>("eventDateTime");
                 <li class="event-item" data-url="@eventItem.Url()">
-                    <h2>@eventItem.Name</h2>
-                    <p>@eventItem.Value("summary")</p>
-                    <p><strong>Date:</strong> @eventItem.Value<DateTime>("eventDateTime").ToString("dd MMM yyyy")</p>
-                    <p><strong>Location:</strong> @eventItem.Value("location")</p>
+                    <a href="@eventItem.Url()" class="event-link" title="View details for @eventItem.Name">
+                        <h2>@eventItem.Name</h2>
+                        <p>@eventItem.Value("summary")</p>
+                        @if (eventDate.HasValue)
+                        {
+                            <p><strong>Date:</strong> @eventDate.Value.ToString("dd MMM yyyy")</p>
+                        }
+                        <p><strong>Location:</strong> @eventItem.Value("location")</p>
+                    </a>
                 </li>
             }
         </ul>
 
         <!-- RIGHT: Event details -->
-        <div id="eventDetail" class="event-detail">
+        <div id="eventDetail" class="event-detail" aria-live="polite">
             <p>Select an event to see details.</p>
         </div>
     </div>
 </section>
 
-<style>
-    .container {
-        max-width: 1100px;
-        margin: 2rem auto;
-        padding: 0 1.5rem;
-        font-family: "Inter", sans-serif;
-    }
-
-    .event-layout {
-        display: grid;
-        grid-template-columns: 1fr 1.2fr;
-        gap: 2rem;
-    }
-
-    .events {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .event-item {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        cursor: pointer;
-        transition: background 0.2s, transform 0.1s;
-    }
-
-    .event-item:hover {
-        background: #f9fafb;
-        transform: translateY(-2px);
-    }
-
-    .event-item h2 {
-        margin-bottom: 0.4rem;
-        font-size: 1.2rem;
-        color: #1f2937;
-    }
-
-    .event-detail {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 1.5rem;
-        min-height: 300px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .event-detail h1 {
-        margin-bottom: 0.5rem;
-        color: #111827;
-    }
-
-    .event-detail p {
-        color: #4b5563;
-        margin: 0.5rem 0;
-    }
-</style>
-
-<script>
-// Handle click on event item
-document.querySelectorAll(".event-item").forEach(item => {
-    item.addEventListener("click", async () => {
-        const url = item.getAttribute("data-url");
-        const detailContainer = document.getElementById("eventDetail");
-
-        detailContainer.innerHTML = "<p>⏳ Loading event details...</p>";
-
-        try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Failed to load event");
-            const html = await res.text();
-
-            // Extract <article> content from event-detail page
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-            const article = doc.querySelector(".event-detail");
-
-            if (article) {
-                detailContainer.innerHTML = article.innerHTML;
-            } else {
-                detailContainer.innerHTML = "<p>⚠️ Could not load event details.</p>";
-            }
-
-        } catch (err) {
-            console.error(err);
-            detailContainer.innerHTML = `<p style='color:red;'>❌ ${err.message}</p>`;
-        }
-    });
-});
-</script>
+<!-- External styles and scripts -->
+<link rel="stylesheet" href="/css/event-list.css" />
+<script src="/js/event-list.js" defer></script>
