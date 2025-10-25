@@ -3,21 +3,123 @@
     Layout = "master.cshtml";
 }
 
-<article class="event-detail container">
-    <h1>@Model.Value("title")</h1>
-    <p><strong>Date:</strong> @Model.Value<DateTime>("eventDateTime").ToString("dddd, dd MMM yyyy")</p>
-    <p><strong>Location:</strong> @Model.Value("location")</p>
-    <div class="summary">@Model.Value("summary")</div>
+<section class="events-list container">
+    <h1 class="page-title">Upcoming Events</h1>
 
-    <hr />
+    <div id="eventsContainer" class="events-grid">
+        <p>Loading events...</p>
+    </div>
+</section>
 
-    @if (Umbraco.MemberIsLoggedOn())
-    {
-        <h2>Book this event</h2>
-        @Html.Partial("Partials/_BookingForm", new { EventId = Model.Id })
+<!-- Message Display -->
+<div id="message" style="text-align:center; margin-top:1rem;"></div>
+
+<script>
+// 🔹 Config from appsettings.json
+const config = {
+  MemberbaseApi: {
+    BaseUrl: "https://demo-log.memberbase-sandbox.com/api/v1",
+    ApiKey: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..." // truncate in production
+  },
+  MemberbaseEndpoints: {
+    Events: "/events"
+  }
+};
+
+const eventsUrl = `${config.MemberbaseApi.BaseUrl}${config.MemberbaseEndpoints.Events}`;
+const container = document.getElementById("eventsContainer");
+const message = document.getElementById("message");
+
+async function loadEvents() {
+  try {
+    const response = await fetch(eventsUrl, {
+      headers: {
+        "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!response.ok) throw new Error("Failed to load events");
+
+    const events = await response.json();
+    if (!events || events.length === 0) {
+      container.innerHTML = "<p>No upcoming events available.</p>";
+      return;
     }
-    else
-    {
-        <p>Please <a href="/login">log in</a> to book this event.</p>
-    }
-</article>
+
+    // Render event cards
+    container.innerHTML = events.map(evt => `
+      <div class="event-card">
+        <h3>${evt.name}</h3>
+        <p><strong>Date:</strong> ${new Date(evt.startDateTime).toLocaleDateString()}</p>
+        <p><strong>Location:</strong> ${evt.location || "TBA"}</p>
+        <p>${evt.description || ""}</p>
+        <a href="/event-detail/${evt.id}" class="book-btn">View & Book</a>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p style="color:red;">❌ ${err.message}</p>`;
+  }
+}
+
+loadEvents();
+</script>
+
+<style>
+  .container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: "Inter", sans-serif;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2rem;
+  }
+
+  .events-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .event-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .event-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+  }
+
+  .event-card p {
+    margin: 0.4rem 0;
+    color: #4b5563;
+  }
+
+  .book-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    background-color: #2563eb;
+    color: white;
+    text-decoration: none;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+
+  .book-btn:hover {
+    background-color: #1d4ed8;
+  }
+</style>

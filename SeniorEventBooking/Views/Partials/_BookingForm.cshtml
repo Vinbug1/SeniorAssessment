@@ -1,22 +1,215 @@
 @model dynamic
 
-<form method="post" asp-controller="EventBooking" asp-action="SubmitBooking" class="booking-form">
-    <input type="hidden" name="EventId" value="@Model.EventId" />
+<style>
+  body {
+    font-family: "Inter", system-ui, sans-serif;
+    background: #f9fafb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
 
-    <div>
-        <label>Name</label>
-        <input type="text" name="Name" required />
-    </div>
+  .booking-container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 2rem 2.5rem;
+    width: 100%;
+    max-width: 420px;
+  }
 
-    <div>
-        <label>Email</label>
-        <input type="email" name="Email" required />
-    </div>
+  .booking-container h2 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+    color: #111827;
+  }
 
-    <div>
-        <label>Note (optional)</label>
-        <textarea name="Note"></textarea>
-    </div>
+  .booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-    <button type="submit">Book Now</button>
-</form>
+  .booking-form label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+
+  .booking-form input,
+  .booking-form textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+
+  .booking-form input:focus,
+  .booking-form textarea:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+  }
+
+  .booking-form textarea {
+    resize: vertical;
+    min-height: 90px;
+  }
+
+  .booking-form button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .booking-form button:hover {
+    background-color: #1d4ed8;
+  }
+
+  #message {
+    margin-top: 1rem;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  #message:empty {
+    display: none;
+  }
+</style>
+
+<div class="booking-container">
+  <h2>Book Your Event</h2>
+
+  <form id="bookingForm" method="post" class="booking-form">
+      <input type="hidden" name="EventId" value="@Model.EventId" />
+      <input type="hidden" name="BookingDate" value="@DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")" />
+
+      <div>
+          <label>Name</label>
+          <input type="text" name="Name" placeholder="Enter your full name" required />
+      </div>
+
+      <div>
+          <label>Email</label>
+          <input type="email" name="Email" placeholder="Enter your email address" required />
+      </div>
+
+      <div>
+          <label>Note (optional)</label>
+          <textarea name="Note" placeholder="Any special requests or comments"></textarea>
+      </div>
+
+      <button type="submit">Book Now</button>
+  </form>
+
+  <div id="message"></div>
+</div>
+
+<script>
+const config = {
+  MemberbaseApi: {
+    BaseUrl: "https://demo-log.memberbase-sandbox.com/api/v1",
+    ApiKey: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..." // truncated for readability
+  },
+  MemberbaseEndpoints: {
+    Members: "/members",
+    Bookings: "/bookings",
+    Events: "/events"
+  }
+};
+
+const membersUrl = `${config.MemberbaseApi.BaseUrl}${config.MemberbaseEndpoints.Members}`;
+const bookingsUrl = `${config.MemberbaseApi.BaseUrl}${config.MemberbaseEndpoints.Bookings}`;
+
+const form = document.getElementById("bookingForm");
+const message = document.getElementById("message");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  message.textContent = "⏳ Processing your booking...";
+  message.style.color = "#374151";
+
+  const formData = Object.fromEntries(new FormData(form));
+  const email = formData.Email.trim();
+  const name = formData.Name.trim();
+  const eventId = formData.EventId;
+  const note = formData.Note?.trim() || "";
+
+  try {
+    // 1️⃣ Check if user exists
+    const findRes = await fetch(`${membersUrl}?email=${encodeURIComponent(email)}`, {
+      headers: {
+        "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    let member = null;
+    if (findRes.ok) {
+      const data = await findRes.json();
+      if (Array.isArray(data) && data.length > 0) {
+        member = data[0];
+      }
+    }
+
+    // 2️⃣ If not found, create user
+    if (!member) {
+      const newMember = {
+        fullName: name,
+        emailAddress: email,
+        salutation: "Mr/Ms"
+      };
+
+      const createRes = await fetch(membersUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newMember)
+      });
+
+      if (!createRes.ok) throw new Error("Failed to create user");
+      member = await createRes.json();
+    }
+
+    // 3️⃣ Create booking
+    const booking = {
+      eventId: eventId,
+      memberId: member.id,
+      notes: note,
+      bookingDate: formData.BookingDate
+    };
+
+    const bookingRes = await fetch(bookingsUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(booking)
+    });
+
+    if (!bookingRes.ok) throw new Error("Failed to create booking");
+
+    message.textContent = "✅ Booking successful! Thank you for registering.";
+    message.style.color = "#16a34a";
+    form.reset();
+
+  } catch (err) {
+    console.error(err);
+    message.textContent = `❌ ${err.message}`;
+    message.style.color = "#dc2626";
+  }
+});
+</script>
