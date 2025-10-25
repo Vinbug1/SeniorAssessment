@@ -1,0 +1,21 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "master.cshtml";
+    var events = Model.Children().OrderBy(x => x.Value<DateTime>("eventDateTime"));
+}
+
+<section class="event-list container">
+    <h1>@Model.Name</h1>
+
+    <ul class="events">
+        @foreach (var eventItem in events)
+        {
+            <li>
+                <h2><a href="@eventItem.Url()">@eventItem.Name</a></h2>
+                <p>@eventItem.Value("summary")</p>
+                <p><strong>Date:</strong> @eventItem.Value<DateTime>("eventDateTime").ToString("dd MMM yyyy")</p>
+                <p><strong>Location:</strong> @eventItem.Value("location")</p>
+            </li>
+        }
+    </ul>
+</section>

@@ -1,0 +1,22 @@
+@model dynamic
+
+<form method="post" asp-controller="EventBooking" asp-action="SubmitBooking" class="booking-form">
+    <input type="hidden" name="EventId" value="@Model.EventId" />
+
+    <div>
+        <label>Name</label>
+        <input type="text" name="Name" required />
+    </div>
+
+    <div>
+        <label>Email</label>
+        <input type="email" name="Email" required />
+    </div>
+
+    <div>
+        <label>Note (optional)</label>
+        <textarea name="Note"></textarea>
+    </div>
+
+    <button type="submit">Book Now</button>
+</form>

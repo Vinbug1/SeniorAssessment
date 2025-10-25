@@ -1,0 +1,23 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "master.cshtml";
+}
+
+<article class="event-detail container">
+    <h1>@Model.Value("title")</h1>
+    <p><strong>Date:</strong> @Model.Value<DateTime>("eventDateTime").ToString("dddd, dd MMM yyyy")</p>
+    <p><strong>Location:</strong> @Model.Value("location")</p>
+    <div class="summary">@Model.Value("summary")</div>
+
+    <hr />
+
+    @if (Umbraco.MemberIsLoggedOn())
+    {
+        <h2>Book this event</h2>
+        @Html.Partial("Partials/_BookingForm", new { EventId = Model.Id })
+    }
+    else
+    {
+        <p>Please <a href="/login">log in</a> to book this event.</p>
+    }
+</article>
