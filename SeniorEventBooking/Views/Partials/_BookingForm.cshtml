@@ -7,26 +7,115 @@
       <input type="hidden" name="EventId" value="@Model?.EventId" />
       <input type="hidden" name="BookingDate" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
 
-      <div>
+      <div class="form-group">
           <label>Full Name</label>
           <input type="text" name="FullName" placeholder="Enter your full name" required />
       </div>
 
-      <div>
+      <div class="form-group">
           <label>Email</label>
           <input type="email" name="Email" placeholder="Enter your email address" required />
       </div>
 
-      <div>
+      <div class="form-group">
           <label>Notes</label>
           <textarea name="Note" placeholder="Any special requests"></textarea>
       </div>
 
-      <button type="submit">Book Now</button>
+      <button type="submit" class="submit-btn">Book Now</button>
   </form>
 
-  <div id="message"></div>
+  <div id="message" class="booking-message"></div>
 </div>
+
+<style>
+/* Container */
+.booking-container {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  font-family: "Inter", sans-serif;
+}
+
+/* Heading */
+.booking-container h2 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+/* Form layout */
+.booking-form .form-group {
+  margin-bottom: 1.2rem;
+}
+
+.booking-form label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.booking-form input,
+.booking-form textarea {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.booking-form input:focus,
+.booking-form textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Textarea resize */
+.booking-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Submit button */
+.submit-btn {
+  display: inline-block;
+  width: 100%;
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.submit-btn:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Message */
+.booking-message {
+  margin-top: 1rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+</style>
 
 <script>
 const API_BASE = "https://adassoc.memberbase-test.com/api/v1";
