@@ -1,102 +1,15 @@
-@model dynamic
-
-<style>
-  body {
-    font-family: "Inter", system-ui, sans-serif;
-    background: #f9fafb;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
-
-  .booking-container {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    padding: 2rem 2.5rem;
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .booking-container h2 {
-    text-align: center;
-    font-size: 1.6rem;
-    margin-bottom: 1.5rem;
-    color: #111827;
-  }
-
-  .booking-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .booking-form label {
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.25rem;
-    display: block;
-  }
-
-  .booking-form input,
-  .booking-form textarea {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-  }
-
-  .booking-form input:focus,
-  .booking-form textarea:focus {
-    border-color: #2563eb;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
-  }
-
-  .booking-form textarea {
-    resize: vertical;
-    min-height: 90px;
-  }
-
-  .booking-form button {
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    padding: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .booking-form button:hover {
-    background-color: #1d4ed8;
-  }
-
-  #message {
-    margin-top: 1rem;
-    text-align: center;
-    font-weight: 500;
-  }
-
-  #message:empty {
-    display: none;
-  }
-</style>
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 
 <div class="booking-container">
   <h2>Book Your Event</h2>
 
-  <form id="bookingForm" method="post" class="booking-form">
-      <input type="hidden" name="EventId" value="@Model.EventId" />
-      <input type="hidden" name="BookingDate" value="@DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")" />
+  <form id="bookingForm" class="booking-form">
+      <input type="hidden" name="EventId" value="@Model?.EventId" />
+      <input type="hidden" name="BookingDate" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
 
       <div>
-          <label>Name</label>
-          <input type="text" name="Name" placeholder="Enter your full name" required />
+          <label>Full Name</label>
+          <input type="text" name="FullName" placeholder="Enter your full name" required />
       </div>
 
       <div>
@@ -105,8 +18,8 @@
       </div>
 
       <div>
-          <label>Note (optional)</label>
-          <textarea name="Note" placeholder="Any special requests or comments"></textarea>
+          <label>Notes</label>
+          <textarea name="Note" placeholder="Any special requests"></textarea>
       </div>
 
       <button type="submit">Book Now</button>
@@ -116,99 +29,124 @@
 </div>
 
 <script>
-const config = {
-  MemberbaseApi: {
-    BaseUrl: "https://demo-log.memberbase-sandbox.com/api/v1",
-    ApiKey: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..." // truncated for readability
-  },
-  MemberbaseEndpoints: {
-    Members: "/members",
-    Bookings: "/bookings",
-    Events: "/events"
-  }
-};
-
-const membersUrl = `${config.MemberbaseApi.BaseUrl}${config.MemberbaseEndpoints.Members}`;
-const bookingsUrl = `${config.MemberbaseApi.BaseUrl}${config.MemberbaseEndpoints.Bookings}`;
+const API_BASE = "https://adassoc.memberbase-test.com/api/v1";
+const CONTACTS_URL = `${API_BASE}/contacts`;
+const DATASET_NAME = "eventBookings"; // Replace with your dataset name
+const BOOKINGS_URL = `${API_BASE}/datasets/${DATASET_NAME}/data`;
+const API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNWJmMmExZTRjNDMzNWY5ZGY3ZjE2YmZkY2JlNGE4OWU0ZGUwNzMwYTQ2OWMyYmEzODZmODMyYWE0M2I3MDIzYWNkMzE5NzhiNzNiZjc4MzYiLCJpYXQiOjE3NjEzNzY0NzkuNDI3MjAzLCJuYmYiOjE3NjEzNzY0NzkuNDI3MjA2LCJleHAiOjE5MTkxNDI4NzkuNDEzMTM1LCJzdWIiOiIiLCJzY29wZXMiOlsiKiJdfQ.CrsmfKta_xznCQqizkfckm31Fa_5WNGbz_xr7SMks5MHPrWYSKyIbikvIZcsUZnlMLh9fL3GdDlrstybDJqUrjnVdUS8itjHAph_Zp5ZCrB10vi9NTUfBzb51p5-Qc64ZvQrjmo7agZ2dNRy_sbHqSDckntVHu9NsnFcTjXzB50ad2kPv5WPUdYLITEG0jbst61XOrsS5mOeb5HxAnk4wGMRkV8e8rPTb5If_tvjVu1RdN-O1EBa47UMJ927XXUMrMxnGVEMcD_ITr0HoSKxrDBucphe6tG_uIpyEiHNjZcj-on9Tf91583wHj612qD4mr3c7QAA0KRDbMsHkypttGyDpnhsi4gQfVVACnrlI1mTD67pWAhVcde59i1qJ7XFSPObbXPLf1E1mYO1cY4Rj966h_XcNv1AtGezG_kKbOw9yCluaI5_5Putd402-bl-cHRzFCZo6V46mXVpwQHGj_qxk0zn0uNEX4Zapmf6_DnxqoGtPHfsyfMCci8z0lEJR7v0aB0yOqot3WIwTb9QF3rzsC279DAAgQrxvkmAIDAtFRs0uqiwckPODtI1h-nJt9oIz3v8FDB4EDIc8qJuFuNEPjDpcn9Lvp_IMKA3TtyyBRERmMzm9roeVxGKxh2drMU9yJ8X5w-h8A7lrIlNGxEPMJVwoNMny-HWUNV6HA8"; // Replace with your key
 
 const form = document.getElementById("bookingForm");
 const message = document.getElementById("message");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  message.textContent = "⏳ Processing your booking...";
+  message.textContent = "⏳ Checking contact information...";
   message.style.color = "#374151";
 
   const formData = Object.fromEntries(new FormData(form));
-  const email = formData.Email.trim();
-  const name = formData.Name.trim();
-  const eventId = formData.EventId;
-  const note = formData.Note?.trim() || "";
+  const { FullName, Email, Note, BookingDate, EventId } = formData;
+
+  const emailDomain = Email.split("@")[1].toLowerCase();
 
   try {
-    // 1️⃣ Check if user exists
-    const findRes = await fetch(`${membersUrl}?email=${encodeURIComponent(email)}`, {
+    // STEP 1️⃣ — Try to find contact by email
+    const searchRes = await fetch(`${CONTACTS_URL}?email=${encodeURIComponent(Email)}`, {
       headers: {
-        "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+        "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       }
     });
 
-    let member = null;
-    if (findRes.ok) {
-      const data = await findRes.json();
+    let contact = null;
+    if (searchRes.ok) {
+      const data = await searchRes.json();
       if (Array.isArray(data) && data.length > 0) {
-        member = data[0];
+        contact = data[0];
+        console.log("Existing contact found:", contact);
       }
     }
 
-    // 2️⃣ If not found, create user
-    if (!member) {
-      const newMember = {
-        fullName: name,
-        emailAddress: email,
-        salutation: "Mr/Ms"
+    // STEP 2️⃣ — If not found, infer organisation from email domain
+    if (!contact) {
+      message.textContent = "🆕 Creating a new contact profile...";
+
+      // Guess organisation from email domain
+      const inferredOrganisation =
+        emailDomain.includes("gmail") ? "Gmail Users" :
+        emailDomain.includes("yahoo") ? "Yahoo Mail Users" :
+        emailDomain.includes("outlook") ? "Outlook Mail Users" :
+        emailDomain.split(".")[0].charAt(0).toUpperCase() + emailDomain.split(".")[0].slice(1);
+
+      const newContact = {
+        fullName: FullName,
+        firstName: FullName.split(" ")[0],
+        surname: FullName.split(" ").slice(-1).join(" "),
+        emailAddress: Email,
+        salutation: "",
+        qualification: "",
+        description: `Auto-created from booking form (${emailDomain})`,
+        businessUnitId: 1,
+        organisation: {
+          name: inferredOrganisation,
+          description: `Auto-created org from ${emailDomain}`,
+          emailAddress: Email,
+          website: `https://${emailDomain}`
+        },
+        addresses: [
+          {
+            line1: "N/A",
+            city: "",
+            country: "United Kingdom",
+            type: "primary"
+          }
+        ]
       };
 
-      const createRes = await fetch(membersUrl, {
+      const createRes = await fetch(CONTACTS_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+          "Authorization": `Bearer ${API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(newMember)
+        body: JSON.stringify(newContact)
       });
 
-      if (!createRes.ok) throw new Error("Failed to create user");
-      member = await createRes.json();
+      if (!createRes.ok) throw new Error("❌ Failed to create new contact");
+      contact = await createRes.json();
     }
 
-    // 3️⃣ Create booking
-    const booking = {
-      eventId: eventId,
-      memberId: member.id,
-      notes: note,
-      bookingDate: formData.BookingDate
+    // STEP 3️⃣ — Create the booking in dataset
+    message.textContent = "📅 Creating booking record...";
+
+    const bookingData = {
+      customerType: "contact",
+      customerId: contact.id,
+      multiSelect: ["opt 1"],
+      text: FullName,
+      date: BookingDate,
+      select: "4",
+      boolean: true,
+      textarea: Note || "No notes provided"
     };
 
-    const bookingRes = await fetch(bookingsUrl, {
+    const bookingRes = await fetch(BOOKINGS_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
+        "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(booking)
+      body: JSON.stringify(bookingData)
     });
 
-    if (!bookingRes.ok) throw new Error("Failed to create booking");
+    if (!bookingRes.ok) throw new Error("❌ Failed to create booking");
 
-    message.textContent = "✅ Booking successful! Thank you for registering.";
+    message.textContent = "✅ Booking successfully created!";
     message.style.color = "#16a34a";
     form.reset();
 
-  } catch (err) {
-    console.error(err);
-    message.textContent = `❌ ${err.message}`;
+  } catch (error) {
+    console.error(error);
+    message.textContent = error.message || "❌ Something went wrong";
     message.style.color = "#dc2626";
   }
 });
