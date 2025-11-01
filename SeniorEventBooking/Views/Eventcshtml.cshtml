@@ -1,0 +1,29 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "master.cshtml";
+    var evt = Model.Content;
+}
+
+<section class="event-detail container">
+    <h1>@evt.Value("title")</h1>
+    <p>@evt.Value("summary")</p>
+    <p><strong>Date:</strong> @evt.Value<DateTime>("eventDateTime")?.ToString("dd MMM yyyy")</p>
+    <p><strong>Time:</strong> @evt.Value<DateTime>("eventDateTime")?.ToString("HH:mm")</p>
+    <p><strong>Location:</strong> @evt.Value("location")</p>
+    <p><strong>Capacity:</strong> @evt.Value<int>("capacity")</p>
+    <a href="/book-event?eventId=@evt.Key" class="book-btn">Book Now</a>
+</section>@RenderBody()
+@{
+	var selection = Umbraco.ContentAtRoot().FirstOrDefault()
+    .Children()
+    .Where(x => x.IsVisible());
+}
+<ul>
+	@foreach (var item in selection)
+	{
+		<li>
+			<a href="@item.Url()">@item.Name()</a>
+		</li>
+	}
+</ul>
+
