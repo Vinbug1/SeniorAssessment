@@ -118,80 +118,124 @@
 </style>
 
 <script>
+const API_BASE = "@apiBase";
+const API_KEY = "@apiKey";
+
+const CONTACTS_URL = `${API_BASE}/contacts`;
+const BOOKINGS_URL = `${API_BASE}/bookings`;
+
+const form = document.getElementById("bookingForm");
+const message = document.getElementById("message");
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    message.textContent = "⏳ Checking contact...";
+    message.style.color = "#555";
+
+    const data = Object.fromEntries(new FormData(form));
+    const { FullName, Email, Note, BookingDate, EventId } = data;
+
+    try {
+        // 1️⃣ Check if contact exists
+        let contact = null;
+        const contactRes = await fetch(`${CONTACTS_URL}/${contactId}`, {
+            headers: { "Authorization": `Bearer ${API_KEY}` }
+        });
+        if (contactRes.ok) {
+            const contacts = await contactRes.json();
+            if (contacts.length > 0) contact = contacts[0];
+        }
+
+        // 2️⃣ If not, create a new one
+        if (!contact) {
+            message.textContent = "🆕 Creating new contact...";
+            const newContact = {
+                fullName: FullName,
+                emailAddress: Email,
+                description: "Auto-created from booking form"
+            };
+            const createRes = await fetch(CONTACTS_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(newContact)
+            });
+            contact = await createRes.json();
+        }
+
+        // 3️⃣ Create booking
+        message.textContent = "📅 Creating booking...";
+        const booking = {
+            customerType: "member",
+            customerId: contact.id,
+            eventId: EventId,
+            note: Note,
+            bookingDate: BookingDate
+        };
+        const bookRes = await fetch(BOOKINGS_URL, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(booking)
+        });
+
+        if (!bookRes.ok) throw new Error("Failed to create booking");
+
+        message.textContent = "✅ Booking created successfully!";
+        message.style.color = "green";
+        form.reset();
+
+    } catch (err) {
+        console.error(err);
+        message.textContent = "❌ Error: " + err.message;
+        message.style.color = "red";
+    }
+});
+</script>
+
+
+@* <script>
 const API_BASE = "https://adassoc.memberbase-test.com/api/v1";
 const CONTACTS_URL = `${API_BASE}/contacts`;
 const DATASET_NAME = "eventBookings"; // Replace with your dataset name
 const BOOKINGS_URL = `${API_BASE}/datasets/${DATASET_NAME}/data`;
 const API_KEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNWJmMmExZTRjNDMzNWY5ZGY3ZjE2YmZkY2JlNGE4OWU0ZGUwNzMwYTQ2OWMyYmEzODZmODMyYWE0M2I3MDIzYWNkMzE5NzhiNzNiZjc4MzYiLCJpYXQiOjE3NjEzNzY0NzkuNDI3MjAzLCJuYmYiOjE3NjEzNzY0NzkuNDI3MjA2LCJleHAiOjE5MTkxNDI4NzkuNDEzMTM1LCJzdWIiOiIiLCJzY29wZXMiOlsiKiJdfQ.CrsmfKta_xznCQqizkfckm31Fa_5WNGbz_xr7SMks5MHPrWYSKyIbikvIZcsUZnlMLh9fL3GdDlrstybDJqUrjnVdUS8itjHAph_Zp5ZCrB10vi9NTUfBzb51p5-Qc64ZvQrjmo7agZ2dNRy_sbHqSDckntVHu9NsnFcTjXzB50ad2kPv5WPUdYLITEG0jbst61XOrsS5mOeb5HxAnk4wGMRkV8e8rPTb5If_tvjVu1RdN-O1EBa47UMJ927XXUMrMxnGVEMcD_ITr0HoSKxrDBucphe6tG_uIpyEiHNjZcj-on9Tf91583wHj612qD4mr3c7QAA0KRDbMsHkypttGyDpnhsi4gQfVVACnrlI1mTD67pWAhVcde59i1qJ7XFSPObbXPLf1E1mYO1cY4Rj966h_XcNv1AtGezG_kKbOw9yCluaI5_5Putd402-bl-cHRzFCZo6V46mXVpwQHGj_qxk0zn0uNEX4Zapmf6_DnxqoGtPHfsyfMCci8z0lEJR7v0aB0yOqot3WIwTb9QF3rzsC279DAAgQrxvkmAIDAtFRs0uqiwckPODtI1h-nJt9oIz3v8FDB4EDIc8qJuFuNEPjDpcn9Lvp_IMKA3TtyyBRERmMzm9roeVxGKxh2drMU9yJ8X5w-h8A7lrIlNGxEPMJVwoNMny-HWUNV6HA8"; // Replace with your key
 
-const form = document.getElementById("bookingForm");
+@* const form = document.getElementById("bookingForm");
 const message = document.getElementById("message");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  message.textContent = "⏳ Checking contact information...";
-  message.style.color = "#374151";
+  message.textContent = "⏳ Checking contact...";
+  message.style.color = "#555";
 
-  const formData = Object.fromEntries(new FormData(form));
-  const { FullName, Email, Note, BookingDate, EventId } = formData;
-
-  const emailDomain = Email.split("@")[1].toLowerCase();
+  const data = Object.fromEntries(new FormData(form));
+  const { FullName, Email, Note, BookingDate, EventId } = data;
 
   try {
-    // STEP 1️⃣ — Try to find contact by email
-    const searchRes = await fetch(`${CONTACTS_URL}?email=${encodeURIComponent(Email)}`, {
-      headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "Content-Type": "application/json"
-      }
-    });
-
+    // 1️⃣ Check if contact exists
     let contact = null;
-    if (searchRes.ok) {
-      const data = await searchRes.json();
-      if (Array.isArray(data) && data.length > 0) {
-        contact = data[0];
-        console.log("Existing contact found:", contact);
-      }
+    const contactRes = await fetch(`${API_BASE}/members?email=${Email}`, {
+      headers: { "Authorization": `Bearer ${API_KEY}` }
+    });
+    if (contactRes.ok) {
+      const contacts = await contactRes.json();
+      if (contacts.length > 0) contact = contacts[0];
     }
 
-    // STEP 2️⃣ — If not found, infer organisation from email domain
+    // 2️⃣ If not, create a new one
     if (!contact) {
-      message.textContent = "🆕 Creating a new contact profile...";
-
-      // Guess organisation from email domain
-      const inferredOrganisation =
-        emailDomain.includes("gmail") ? "Gmail Users" :
-        emailDomain.includes("yahoo") ? "Yahoo Mail Users" :
-        emailDomain.includes("outlook") ? "Outlook Mail Users" :
-        emailDomain.split(".")[0].charAt(0).toUpperCase() + emailDomain.split(".")[0].slice(1);
-
+      message.textContent = "🆕 Creating new contact...";
       const newContact = {
         fullName: FullName,
-        firstName: FullName.split(" ")[0],
-        surname: FullName.split(" ").slice(-1).join(" "),
         emailAddress: Email,
-        salutation: "",
-        qualification: "",
-        description: `Auto-created from booking form (${emailDomain})`,
-        businessUnitId: 1,
-        organisation: {
-          name: inferredOrganisation,
-          description: `Auto-created org from ${emailDomain}`,
-          emailAddress: Email,
-          website: `https://${emailDomain}`
-        },
-        addresses: [
-          {
-            line1: "N/A",
-            city: "",
-            country: "United Kingdom",
-            type: "primary"
-          }
-        ]
+        description: "Auto-created from booking form"
       };
-
-      const createRes = await fetch(CONTACTS_URL, {
+      const createRes = await fetch(`${API_BASE}/members`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${API_KEY}`,
@@ -199,44 +243,38 @@ form.addEventListener("submit", async (e) => {
         },
         body: JSON.stringify(newContact)
       });
-
-      if (!createRes.ok) throw new Error("❌ Failed to create new contact");
       contact = await createRes.json();
     }
 
-    // STEP 3️⃣ — Create the booking in dataset
-    message.textContent = "📅 Creating booking record...";
-
-    const bookingData = {
-      customerType: "contact",
+    // 3️⃣ Create booking
+    message.textContent = "📅 Creating booking...";
+    const booking = {
+      customerType: "member",
       customerId: contact.id,
-      multiSelect: ["opt 1"],
-      text: FullName,
-      date: BookingDate,
-      select: "4",
-      boolean: true,
-      textarea: Note || "No notes provided"
+      eventId: EventId,
+      note: Note,
+      bookingDate: BookingDate
     };
-
-    const bookingRes = await fetch(BOOKINGS_URL, {
+    const bookRes = await fetch(`${API_BASE}/bookings`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(bookingData)
+      body: JSON.stringify(booking)
     });
 
-    if (!bookingRes.ok) throw new Error("❌ Failed to create booking");
+    if (!bookRes.ok) throw new Error("Failed to create booking");
 
-    message.textContent = "✅ Booking successfully created!";
-    message.style.color = "#16a34a";
+    message.textContent = "✅ Booking created successfully!";
+    message.style.color = "green";
     form.reset();
 
-  } catch (error) {
-    console.error(error);
-    message.textContent = error.message || "❌ Something went wrong";
-    message.style.color = "#dc2626";
+  } catch (err) {
+    console.error(err);
+    message.textContent = "❌ Error: " + err.message;
+    message.style.color = "red";
   }
 });
-</script>
+</script> *@
+

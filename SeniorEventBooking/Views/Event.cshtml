@@ -1,126 +1,15 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
     Layout = "master.cshtml";
+    var evt = Model.Content;
 }
 
-<section class="events-list container">
-    <h1 class="page-title">Upcoming Events</h1>
-
-    <div id="eventsContainer" class="events-grid">
-        <p>Loading events...</p>
-    </div>
+<section class="event-detail container">
+    <h1>@evt.Value("title")</h1>
+    <p>@evt.Value("summary")</p>
+    <p><strong>Date:</strong> @evt.Value<DateTime>("eventDateTime")?.ToString("dd MMM yyyy")</p>
+    <p><strong>Time:</strong> @evt.Value<DateTime>("eventDateTime")?.ToString("HH:mm")</p>
+    <p><strong>Location:</strong> @evt.Value("location")</p>
+    <p><strong>Capacity:</strong> @evt.Value<int>("capacity")</p>
+    <a href="/book-event?eventId=@evt.Key" class="book-btn">Book Now</a>
 </section>
-
-<!-- Message Display -->
-<div id="message" style="text-align:center; margin-top:1rem;"></div>
-
-<script>
-// 🔹 Config from appsettings.json
-const config = {
-  MemberbaseApi: {
-    BaseUrl: "https://demo-log.memberbase-sandbox.com/api/v1",
-    ApiKey:"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNWJmMmExZTRjNDMzNWY5ZGY3ZjE2YmZkY2JlNGE4OWU0ZGUwNzMwYTQ2OWMyYmEzODZmODMyYWE0M2I3MDIzYWNkMzE5NzhiNzNiZjc4MzYiLCJpYXQiOjE3NjEzNzY0NzkuNDI3MjAzLCJuYmYiOjE3NjEzNzY0NzkuNDI3MjA2LCJleHAiOjE5MTkxNDI4NzkuNDEzMTM1LCJzdWIiOiIiLCJzY29wZXMiOlsiKiJdfQ.CrsmfKta_xznCQqizkfckm31Fa_5WNGbz_xr7SMks5MHPrWYSKyIbikvIZcsUZnlMLh9fL3GdDlrstybDJqUrjnVdUS8itjHAph_Zp5ZCrB10vi9NTUfBzb51p5-Qc64ZvQrjmo7agZ2dNRy_sbHqSDckntVHu9NsnFcTjXzB50ad2kPv5WPUdYLITEG0jbst61XOrsS5mOeb5HxAnk4wGMRkV8e8rPTb5If_tvjVu1RdN-O1EBa47UMJ927XXUMrMxnGVEMcD_ITr0HoSKxrDBucphe6tG_uIpyEiHNjZcj-on9Tf91583wHj612qD4mr3c7QAA0KRDbMsHkypttGyDpnhsi4gQfVVACnrlI1mTD67pWAhVcde59i1qJ7XFSPObbXPLf1E1mYO1cY4Rj966h_XcNv1AtGezG_kKbOw9yCluaI5_5Putd402-bl-cHRzFCZo6V46mXVpwQHGj_qxk0zn0uNEX4Zapmf6_DnxqoGtPHfsyfMCci8z0lEJR7v0aB0yOqot3WIwTb9QF3rzsC279DAAgQrxvkmAIDAtFRs0uqiwckPODtI1h-nJt9oIz3v8FDB4EDIc8qJuFuNEPjDpcn9Lvp_IMKA3TtyyBRERmMzm9roeVxGKxh2drMU9yJ8X5w-h8A7lrIlNGxEPMJVwoNMny-HWUNV6HA8"
- // truncate in production
-  },
-  MemberbaseEndpoints: {
-    Events: "/events"
-  }
-};
-
-const eventsUrl = `${config.MemberbaseApi.BaseUrl}${config.MemberbaseEndpoints.Events}`;
-const container = document.getElementById("eventsContainer");
-const message = document.getElementById("message");
-
-async function loadEvents() {
-  try {
-    const response = await fetch(eventsUrl, {
-      headers: {
-        "Authorization": `Bearer ${config.MemberbaseApi.ApiKey}`,
-        "Content-Type": "application/json"
-      }
-    });
-
-    if (!response.ok) throw new Error("Failed to load events");
-
-    const events = await response.json();
-    if (!events || events.length === 0) {
-      container.innerHTML = "<p>No upcoming events available.</p>";
-      return;
-    }
-
-    // Render event cards
-    container.innerHTML = events.map(evt => `
-      <div class="event-card">
-        <h3>${evt.name}</h3>
-        <p><strong>Date:</strong> ${new Date(evt.startDateTime).toLocaleDateString()}</p>
-        <p><strong>Location:</strong> ${evt.location || "TBA"}</p>
-        <p>${evt.description || ""}</p>
-        <a href="/event-detail/${evt.id}" class="book-btn">View & Book</a>
-      </div>
-    `).join("");
-
-  } catch (err) {
-    console.error(err);
-    container.innerHTML = `<p style="color:red;">❌ ${err.message}</p>`;
-  }
-}
-
-loadEvents();
-</script>
-
-<style>
-  .container {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-    font-family: "Inter", sans-serif;
-  }
-
-  .page-title {
-    text-align: center;
-    font-size: 2rem;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 2rem;
-  }
-
-  .events-grid {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  .event-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-
-  .event-card h3 {
-    font-size: 1.3rem;
-    margin-bottom: 0.5rem;
-    color: #1f2937;
-  }
-
-  .event-card p {
-    margin: 0.4rem 0;
-    color: #4b5563;
-  }
-
-  .book-btn {
-    display: inline-block;
-    margin-top: 1rem;
-    background-color: #2563eb;
-    color: white;
-    text-decoration: none;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: background 0.2s;
-  }
-
-  .book-btn:hover {
-    background-color: #1d4ed8;
-  }
-</style>

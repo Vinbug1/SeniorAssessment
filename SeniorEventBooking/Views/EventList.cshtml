@@ -2,40 +2,24 @@
 @{
     Layout = "master.cshtml";
     var events = Model.Content.Children()
-        .Where(x => x.Value<DateTime?>("eventDateTime") != null)
-        .OrderBy(x => x.Value<DateTime>("eventDateTime"));
+                  .Where(x => x.Value<DateTime?>("eventDateTime") != null)
+                  .OrderBy(x => x.Value<DateTime>("eventDateTime"));
 }
 
-<section class="event-list container">
+<section class="events-list container">
     <h1 class="page-title">@Model.Content.Name</h1>
-
-    <div class="event-layout">
-        <!-- LEFT: Event list -->
-        <ul class="events" aria-label="Upcoming events list">
-            @foreach (var eventItem in events)
-            {
-                var eventDate = eventItem.Value<DateTime?>("eventDateTime");
-                <li class="event-item" data-url="@eventItem.Url()">
-                    <a href="@eventItem.Url()" class="event-link" title="View details for @eventItem.Name">
-                        <h2>@eventItem.Name</h2>
-                        <p>@eventItem.Value("summary")</p>
-                        @if (eventDate.HasValue)
-                        {
-                            <p><strong>Date:</strong> @eventDate.Value.ToString("dd MMM yyyy")</p>
-                        }
-                        <p><strong>Location:</strong> @eventItem.Value("location")</p>
-                    </a>
-                </li>
-            }
-        </ul>
-
-        <!-- RIGHT: Event details -->
-        <div id="eventDetail" class="event-detail" aria-live="polite">
-            <p>Select an event to see details.</p>
-        </div>
+    <input type="text" id="searchBox" placeholder="Search events..." />
+    <div class="events-grid">
+        @foreach(var evt in events)
+        {
+            var eventDate = evt.Value<DateTime?>("eventDateTime");
+            <div class="event-card">
+                <h3>@evt.Value("title")</h3>
+                <p>@evt.Value("summary")</p>
+                <p><strong>Date:</strong> @eventDate?.ToString("dd MMM yyyy")</p>
+                <p><strong>Location:</strong> @evt.Value("location")</p>
+                <a href="@evt.Url()" class="book-btn">View & Book</a>
+            </div>
+        }
     </div>
 </section>
-
-<!-- External styles and scripts -->
-<link rel="stylesheet" href="/css/event-list.css" />
-<script src="/js/event-list.js" defer></script>
