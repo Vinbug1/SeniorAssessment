@@ -31,15 +31,16 @@ namespace SeniorEventBooking.Services
         }
 
 
-        // 🔍 Check dataset record (GET /datasets/:name/data/:recordId)
-        public async Task<HttpResponseMessage> GetDatasetRecordAsync(string datasetName, string recordId)
-        {
-            string endpoint = _config["MemberbaseEndpoints:Datasets:CheckRecord"]
-                .Replace("{name}", datasetName)
-                .Replace("{recordId}", recordId);
+        // 🔍 Get contact details by ID
+public async Task<HttpResponseMessage> GetContactDetailsAsync(string contactId)
+{
+    // Replace :id in endpoint
+    string endpoint = _config["MemberbaseEndpoints:CheckRecord"]
+        .Replace(":id", contactId);
 
-            return await _httpClient.GetAsync(endpoint);
-        }
+    return await _httpClient.GetAsync(endpoint);
+}
+
 
         // 🆕 Create dataset record (POST /datasets/:name/data)
         public async Task<HttpResponseMessage> CreateDatasetRecordAsync(string datasetName, object data)
@@ -71,5 +72,13 @@ namespace SeniorEventBooking.Services
         {
             return await _httpClient.GetAsync(_config["MemberbaseEndpoints:Events"]);
         }
+
+        // creating contacts
+                public async Task<HttpResponseMessage> CreateContactAsync(object contactPayload)
+        {
+            var endpoint = _config["MemberbaseEndpoints:CreateRecord"]; // e.g., "/contacts"
+            return await _httpClient.PostAsJsonAsync(endpoint, contactPayload);
+        }
+
     }
 }
